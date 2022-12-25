@@ -1,9 +1,12 @@
+import { WalletService } from './../wallet/wallet.service';
 import { LoginValidation } from './validations/login.validation';
 import { AppHelper } from './../app.helper';
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { RegisterUserValidation } from '../auth/validations/register.validation';
 import { AuthService } from './auth.service';
+import { UserDTO } from 'src/user/dtos/user.dto';
+import { WalletDTO } from 'src/wallet/dtos/wallet.dto';
 
 @Controller()
 export class AuthController {
@@ -11,6 +14,7 @@ export class AuthController {
     private readonly appHelper: AppHelper,
     private readonly authService: AuthService,
     private readonly userService: UserService,
+    private readonly walletService: WalletService,
   ) { }
 
   @Post('/auth/login')
@@ -47,8 +51,12 @@ export class AuthController {
     if (userFound) return this.appHelper.badRequest(res, 'Email is already taken, try another one');
 
     // create user account
-    const createdUser = await this.userService.createUser(data);
+    const createdUser: UserDTO = await this.userService.createUser(data);
     const { password, ...user } = createdUser;
+
+    // create wallet
+    const wallet: WalletDTO = { user: createdUser, balance: '0' };
+    const savedWallet = await this.walletService.createWallet(wallet);
 
     // authenticate the user and return a token
     const { access_token } = await this.authService.login(user);

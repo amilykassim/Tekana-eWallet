@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Wallet } from "src/wallet/entities/wallet.entity";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from "typeorm";
 
 @Entity()
 export class User {
@@ -14,6 +15,9 @@ export class User {
 
     @Column({ length: 255 })
     password: string;
+
+    @OneToOne(() => Wallet)
+    wallet: Wallet
 
     @CreateDateColumn()
     createdAt: Date;

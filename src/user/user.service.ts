@@ -22,7 +22,7 @@ export class UserService {
 
     // save user in the db
     const entity = await this.usersRepository.create(user);
-    return await this.usersRepository.save(entity);
+    return this.usersRepository.save(entity);
   }
 
   async saveData(users: any) {

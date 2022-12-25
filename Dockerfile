@@ -20,11 +20,6 @@ RUN npm ci
 
 # Set node environment variable to production
 
-# ENV NODE_PORT=8080
-ENV ELASTIC_APM_SERVER_URL=https://apm.oltranz.com \
-    ELASTIC_APM_SERVICE_NAME=tekana-ewallet \
-    ELASTIC_APM_SECRET_TOKEN=6K3cy2B19b3EnvuZr62a8zx6
-
 # Bundle app source
 # TODO: should we only copy a whitelist or use docker ignore for blacklist?
 COPY . . 

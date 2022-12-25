@@ -1,3 +1,4 @@
+import { WalletModule } from './../wallet/wallet.module';
 import { AppHelper } from './../app.helper';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
@@ -11,6 +12,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 @Module({
   imports: [
     UserModule,
+    WalletModule,
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,
