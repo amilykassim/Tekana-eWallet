@@ -19,6 +19,9 @@ export class User {
     @OneToOne(() => Wallet)
     wallet: Wallet
 
+    @Column()
+    isAdmin: boolean;
+
     @CreateDateColumn()
     createdAt: Date;
 

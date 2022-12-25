@@ -1,32 +1,35 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
+import { UserService } from 'src/user/user.service';
+import { Controller, Get, Res, UseGuards, Request } from '@nestjs/common';
+import { AppHelper } from 'src/app.helper';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { UserService } from './user.service';
-import { UserUtils } from './user.helper';
+import { UserDTO } from './dtos/user.dto';
 
 @Controller()
 export class UserController {
-  private validatedUsers = [];
-
   constructor(
+    private readonly appHelper: AppHelper,
     private readonly userService: UserService,
   ) { }
 
   @UseGuards(JwtAuthGuard)
   @Get('/users')
-  async getUncommittedUsers(@Res() res) {
-    const users = await this.validatedUsers;
+  async getWallets(@Request() req, @Res() res) {
+    const user: UserDTO = req.user;
 
-    return res.status(200).json({ code: 200, data: users });
-  }
+    let foundUsers = [];
+    let totalUsers = null;
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/users/committed')
-  async getCommittedUsers(@Res() res) {
-    const results = await this.userService.findAll();
+    if (user.isAdmin) {
+      const [users, count] = await this.userService.findAllUsers();
+      foundUsers = users;
+      totalUsers = count;
 
-    // remove password
-    const users = results.map(({ password, ...users }) => users);
+    } else {
+      const foundUser = await this.userService.findByEmail(user.email);
+      foundUsers.push(foundUser);
+      totalUsers = 1;
+    }
 
-    return res.status(200).json({ code: 200, data: users });
+    return this.appHelper.successRequest(res, { totalUsers, foundUsers });
   }
 }

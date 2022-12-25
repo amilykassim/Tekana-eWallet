@@ -1,3 +1,4 @@
+import { AppHelper } from './../app.helper';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserController } from './user.controller';
@@ -12,7 +13,7 @@ require('dotenv').config();
     TypeOrmModule.forFeature([User]),
   ],
   controllers: [UserController],
-  providers: [UserService, UserUtils],
+  providers: [UserService, UserUtils, AppHelper],
   exports: [UserService]
 })
 export class UserModule { }

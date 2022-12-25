@@ -1,3 +1,4 @@
+import { UserDTO } from 'src/user/dtos/user.dto';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
@@ -20,11 +21,9 @@ export class AuthService {
     return bcrypt.compare(password, hashedPassword);
   }
 
-  async login(user: any) {
-    const { id, email, username } = user;
-    const payload = { sub: id, email, username };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+  async login(user) {
+    const { id, email, name, isAdmin } = user;
+    const payload = { sub: id, email, name, isAdmin };
+    return { access_token: this.jwtService.sign(payload) };
   }
 }

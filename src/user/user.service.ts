@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { getRepository, Repository } from 'typeorm';
 import { UserDTO } from './dtos/user.dto';
 import { User } from './entities/user.entity';
 import { UserUtils } from './user.helper';
@@ -25,14 +25,6 @@ export class UserService {
     return this.usersRepository.save(entity);
   }
 
-  async saveData(users: any) {
-    // remove objects with errors
-    const validDataSet = users.filter((user) => user['errors'] == null);
-
-    // commit to DB
-    return this.usersRepository.createQueryBuilder().insert().into(User).values(validDataSet).execute();
-  }
-
   async findByUsername(name: string) {
     return await this.usersRepository.findOne({
       where: { name },
@@ -40,12 +32,33 @@ export class UserService {
   }
 
   async findByEmail(email: string) {
-    return await this.usersRepository.findOne({
-      where: { email },
-    });
+    return getRepository(User)
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.name',
+        'user.email',
+        'user.createdAt',
+        'user.updatedAt',
+      ])
+      .where('user.email = :email', { email })
+      .getOne();
   }
 
-  async findAll() {
-    return await this.usersRepository.find();
+  async findAllUsers() {
+    try {
+      return getRepository(User)
+        .createQueryBuilder('user')
+        .select([
+          'user.id',
+          'user.name',
+          'user.email',
+          'user.createdAt',
+          'user.updatedAt',
+        ])
+        .getManyAndCount();
+    } catch (error) {
+      return error;
+    }
   }
 }

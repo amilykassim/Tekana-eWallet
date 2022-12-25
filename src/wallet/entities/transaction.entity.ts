@@ -11,7 +11,7 @@ export class Transaction {
     @Column({ length: 13 })
     description: string;
 
-    @ManyToOne(() => Wallet, (wallet) => wallet.transactions)
+    @ManyToOne(() => Wallet, (wallet) => wallet.transactions, { onDelete: 'CASCADE' })
     creditedWallet: Wallet;
 
     @Column({ length: 13 })

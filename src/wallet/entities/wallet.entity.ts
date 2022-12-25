@@ -8,7 +8,7 @@ export class Wallet {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @OneToOne(() => User, (user) => user.wallet)
+    @OneToOne(() => User, (user) => user.wallet, { cascade: true })
     @JoinColumn()
     user: User
 

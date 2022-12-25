@@ -46,12 +46,13 @@ export class AuthController {
     if (error) return this.appHelper.badRequest(res, error.details[0].message);
 
     // check if email is unique
-    const data = request.value;
-    let userFound = await this.userService.findByEmail(data.email);
+    const userPayload = request.value;
+    let userFound = await this.userService.findByEmail(userPayload.email);
     if (userFound) return this.appHelper.badRequest(res, 'Email is already taken, try another one');
 
     // create user account
-    const createdUser: UserDTO = await this.userService.createUser(data);
+    userPayload.isAdmin = false;
+    const createdUser: UserDTO = await this.userService.createUser(userPayload);
     const { password, ...user } = createdUser;
 
     // create wallet

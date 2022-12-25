@@ -1,3 +1,4 @@
+import { AppHelper } from './../app.helper';
 import { Transaction } from './entities/transaction.entity';
 import { WalletService } from './wallet.service';
 import { Module } from '@nestjs/common';
@@ -12,7 +13,7 @@ require('dotenv').config();
     TypeOrmModule.forFeature([Wallet, Transaction]),
   ],
   controllers: [WalletController],
-  providers: [WalletService, WalletService],
+  providers: [WalletService, WalletService, AppHelper],
   exports: [WalletService]
 })
 export class WalletModule { }

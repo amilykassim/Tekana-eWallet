@@ -9,6 +9,6 @@ export class AppHelper {
     }
 
     successRequest(@Res() res, response: object) {
-        return res.status(200).json({ statusCode: 200, ...response });
+        return res.status(200).json({ statusCode: 200, data: { ...response } });
     }
 }
