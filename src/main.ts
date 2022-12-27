@@ -14,21 +14,21 @@ async function bootstrap() {
   app.enableCors();
   app.useStaticAssets(join(__dirname, '..', 'static'));
 
-  // app.connectMicroservice<MicroserviceOptions>({
-  //   transport: Transport.KAFKA,
-  //   options: {
-  //     client: {
-  //       brokers: [process.env.KAFKA_BROKER_URL],
-  //       retry: { retries: 50 }
-  //     },
-  //     consumer: {
-  //       groupId: process.env.SMS_API_GROUP_ID,
-  //       retry: { retries: 50 }
-  //     },
-  //   },
-  // });
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.KAFKA,
+    options: {
+      client: {
+        brokers: [process.env.KAFKA_BROKER_URL],
+        retry: { retries: 50 }
+      },
+      consumer: {
+        groupId: process.env.GROUP_ID,
+        retry: { retries: 50 }
+      },
+    },
+  });
 
-  // await app.startAllMicroservicesAsync();
+  await app.startAllMicroservicesAsync();
   await app.listen(3000);
 }
 bootstrap();

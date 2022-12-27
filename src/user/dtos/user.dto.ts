@@ -4,4 +4,5 @@ export interface UserDTO {
     email: string;
     password: string;
     isAdmin: boolean;
+    trackId?: string;
 }

@@ -1,3 +1,4 @@
+import { KafkaHelper } from './helpers/kafka-helper';
 import { Transaction } from './wallet/entities/transaction.entity';
 import { Wallet } from './wallet/entities/wallet.entity';
 import { WalletModule } from './wallet/wallet.module';

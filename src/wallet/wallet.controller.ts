@@ -1,20 +1,42 @@
+import { GetWalletsCommand } from './commands/implementation/wallet-get-wallets.command';
+import { WalletTransactionsCommand } from './commands/implementation/wallet-transactions.command';
+import { WalletTopUpCommand } from './commands/implementation/wallet-topup.command';
+import { PollingHelper } from './../helpers/polling.helper';
+import { WalletBalanceCommand } from './commands/implementation/wallet-balance.command';
 import { UserDTO } from 'src/user/dtos/user.dto';
 import { TopUpDTO } from './dtos/topup.dto';
-import { WalletService } from './wallet.service';
 import { TopUpValidation } from './validations/topup.validation';
 import { AppHelper } from './../app.helper';
 import { Request, Body, Controller, Post, Res, UseGuards, Get } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { WalletConstant } from './constants/wallet.constants';
-import { TransactionDTO } from './dtos/transaction.dto';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { CommandBus } from '@nestjs/cqrs';
+import { v4 as uuidv4 } from 'uuid';
 
 @Controller()
 export class WalletController {
 
   constructor(
+    private readonly commandBus: CommandBus,
     private readonly appHelper: AppHelper,
-    private readonly walletService: WalletService
+    private readonly polling: PollingHelper,
   ) { }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/wallets/balance')
+  async getBalance(@Request() req, @Res() res) {
+    const user: UserDTO = req.user;
+    user.trackId = uuidv4();
+
+    // dispatch wallet balance command to get balance
+    await this.commandBus.execute(new WalletBalanceCommand(user));
+
+    // poll from redis balance response from wallet microservice
+    const wallet = await this.polling.poll(user.trackId);
+
+    // return balance to the user
+    return this.appHelper.successRequest(res, { balance: Number(wallet.balance) });
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('/wallets/topUp')
@@ -23,43 +45,22 @@ export class WalletController {
     const { error } = payload;
     if (error) return this.appHelper.badRequest(res, error.details[0].message);
 
-    // get my wallet
+    // add trackid to each user request to help us track the request/response across different microservices
     const user: UserDTO = req.user;
-    let wallet = await this.walletService.findWalletByUserId(user.id);
+    user.trackId = uuidv4();
 
-    const topUpRequest: TopUpDTO = payload.value;
-    const txn: TransactionDTO = {
-      description: WalletConstant.DEPOSIT,
-      type: WalletConstant.TOP_UP,
-      amount: topUpRequest.amount,
-      creditedWallet: wallet
-    };
+    // dispatch top up command to add money on your wallet
+    const topUpRequest: TopUpDTO = { user, amount: payload.value.amount };
+    await this.commandBus.execute(new WalletTopUpCommand(topUpRequest));
 
-    // save transaction
-    const savedTxn = await this.walletService.saveTransaction(txn);
-
-    // update balance
-    const newBalance = Number(topUpRequest.amount) + Number(wallet.balance);
-    wallet = await this.walletService.updateBalance(wallet.id, newBalance);
+    // poll from redis topup response from wallet microservice
+    const { transaction, wallet } = await this.polling.poll(user.trackId);
 
     // return balance and transaction summary
     return this.appHelper.successRequest(res, {
-      txnId: savedTxn['id'],
-      txnDescription: savedTxn['description'],
-      txnDate: savedTxn['createdAt'],
-      balance: Number(wallet.balance)
-    });
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('/wallets/balance')
-  async getBalance(@Request() req, @Res() res) {
-    // get my wallet
-    const user: UserDTO = req.user;
-    let wallet = await this.walletService.findWalletByUserId(user.id);
-
-    // return balance
-    return this.appHelper.successRequest(res, {
+      txnId: transaction['id'],
+      txnDescription: transaction['description'],
+      txnDate: transaction['createdAt'],
       balance: Number(wallet.balance)
     });
   }
@@ -67,25 +68,17 @@ export class WalletController {
   @UseGuards(JwtAuthGuard)
   @Get('/wallets/transactions')
   async getTransactions(@Request() req, @Res() res) {
+    // add trackid to each user request to help us track the request/response across different microservices
     const user: UserDTO = req.user;
+    user.trackId = uuidv4();
 
-    let foundTransactions = [];
-    let totalTransactions = null;
+    // dispatch transactions command to get all txns on your wallet
+    await this.commandBus.execute(new WalletTransactionsCommand(user));
 
-    // if user is admin get all transactions, otherwise get only the transactions of the authenticated user
-    if (user.isAdmin) {
-      let [transactions, count] = await this.walletService.findTransactions();
-      foundTransactions = transactions;
-      totalTransactions = count;
+    // poll from redis transactions response from wallet microservice
+    const { totalTransactions, foundTransactions } = await this.polling.poll(user.trackId);
 
-    } else {
-      const wallet = await this.walletService.findWalletByUserId(user.id);
-      let [transactions, count] = await this.walletService.findTransactionsByWallet(wallet);
-      foundTransactions = transactions;
-      totalTransactions = count;
-    }
-
-    // return balance
+    // return transactions
     return this.appHelper.successRequest(res, { totalTransactions, foundTransactions });
   }
 
@@ -93,22 +86,35 @@ export class WalletController {
   @Get('/wallets')
   async getWallets(@Request() req, @Res() res) {
     const user: UserDTO = req.user;
+    user.trackId = uuidv4();
 
-    let foundWallets = [];
-    let totalWallets = null;
+    // dispatch get wallets command to get all wallets from wallet microservice
+    await this.commandBus.execute(new GetWalletsCommand(user));
 
-    // get wallet
-    if (user.isAdmin) {
-      const [wallets, count] = await this.walletService.findWallets();
-      foundWallets = wallets;
-      totalWallets = count;
+    // poll from redis wallets response from wallet microservice
+    const { totalWallets, foundWallets } = await this.polling.poll(user.trackId);
 
-    } else {
-      const wallet = await this.walletService.findWalletByUserId(user.id);
-      foundWallets.push(wallet);
-      totalWallets = 1;
-    }
-
+    // return wallets
     return this.appHelper.successRequest(res, { totalWallets, foundWallets });
+  }
+
+  @MessagePattern(process.env.WALLET_BALANCE_RESPONSE_TOPIC)
+  async listenToBalanceResponse(@Payload() { value }) {
+    await this.polling.setData(value.trackId, value);
+  }
+
+  @MessagePattern(process.env.WALLET_TOPUP_RESPONSE_TOPIC)
+  async listenToTopUpResponse(@Payload() { value }) {
+    await this.polling.setData(value.trackId, value);
+  }
+
+  @MessagePattern(process.env.WALLET_TRANSACTIONS_RESPONSE_TOPIC)
+  async listenToTransactionsResponse(@Payload() { value }) {
+    await this.polling.setData(value.trackId, value);
+  }
+
+  @MessagePattern(process.env.WALLET_GET_WALLETS_RESPONSE_TOPIC)
+  async listenToGetWalletsResponse(@Payload() { value }) {
+    await this.polling.setData(value.trackId, value);
   }
 }
