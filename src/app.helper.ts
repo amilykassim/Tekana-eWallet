@@ -8,7 +8,7 @@ export class AppHelper {
         return res.status(400).json({ statusCode: 400, message });
     }
 
-    successRequest(@Res() res, response: object) {
-        return res.status(200).json({ statusCode: 200, data: { ...response } });
+    successRequest(@Res() res, response: object, statusCode = 200) {
+        return res.status(statusCode).json({ statusCode, data: { ...response } });
     }
 }

@@ -23,7 +23,8 @@ import { User } from './user/entities/user.entity';
         Wallet,
         Transaction
       ],
-      synchronize: true
+      synchronize: true,
+      keepConnectionAlive: true
     }),
 
     AuthModule,

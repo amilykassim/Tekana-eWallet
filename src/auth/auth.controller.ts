@@ -61,6 +61,6 @@ export class AuthController {
 
     // authenticate the user and return a token
     const { access_token } = await this.authService.login(user);
-    return this.appHelper.successRequest(res, { user, access_token })
+    return this.appHelper.successRequest(res, { user, access_token }, 201)
   }
 }

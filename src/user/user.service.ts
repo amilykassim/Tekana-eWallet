@@ -38,6 +38,7 @@ export class UserService {
         'user.id',
         'user.name',
         'user.email',
+        'user.password',
         'user.createdAt',
         'user.updatedAt',
       ])

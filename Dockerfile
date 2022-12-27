@@ -24,10 +24,18 @@ RUN npm ci
 # TODO: should we only copy a whitelist or use docker ignore for blacklist?
 COPY . . 
 
+# # uninstall the current bcrypt modules
+RUN npm uninstall bcrypt
+
+# # install the bcrypt modules for the machine
+RUN npm install bcrypt
+
+# RUN npm rebuild bcrypt --build-from-source
+
 RUN npm run build
 
 # No port exposed for microservice.
-CMD [ "npm", "run", "start:prod" ]
+CMD [ "npm", "run", "start:dev" ]
 
 # dev image: https://www.docker.com/blog/advanced-dockerfiles-faster-builds-and-smaller-images-using-buildkit-and-multistage-builds/
 # docker build optimisation: https://brianchristner.io/what-is-docker-buildkit/

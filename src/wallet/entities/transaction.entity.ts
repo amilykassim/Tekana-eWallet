@@ -1,6 +1,5 @@
-import { Wallet } from 'src/wallet/entities/wallet.entity';
-import { User } from '../../user/entities/user.entity';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, JoinColumn, OneToOne, ManyToOne } from "typeorm";
+import { Wallet } from '../../wallet/entities/wallet.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, JoinColumn, OneToOne, ManyToOne, Index } from "typeorm";
 
 @Entity()
 export class Transaction {
@@ -14,6 +13,7 @@ export class Transaction {
     @ManyToOne(() => Wallet, (wallet) => wallet.transactions, { onDelete: 'CASCADE' })
     creditedWallet: Wallet;
 
+    @Index("IDX_transaction_amount", { synchronize: false })
     @Column({ length: 13 })
     amount: string;
 
